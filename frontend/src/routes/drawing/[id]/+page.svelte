@@ -1,86 +1,86 @@
 <script lang="ts">
-	import { onMount } from 'svelte'
-	import { goto } from '$app/navigation'
-	import { page } from '$app/state'
-	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query'
-	import { drawingsAPI } from '$lib/api'
-	import ExcalidrawWrapper from '$lib/components/ExcalidrawWrapper.svelte'
-	import type { DrawingState } from '$lib/stores/drawing'
-	import type { ID } from '$lib/types'
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
+	import { drawingsAPI } from '$lib/api';
+	import ExcalidrawWrapper from '$lib/components/ExcalidrawWrapper.svelte';
+	import type { DrawingState } from '$lib/stores/drawing';
+	import type { ID } from '$lib/types';
 
-	const queryClient = useQueryClient()
-	const drawingId = page.params.id as ID
+	const queryClient = useQueryClient();
+	const drawingId = page.params.id as ID;
 
 	// Query for drawing metadata
 	const drawingQuery = createQuery(() => ({
 		queryKey: ['drawing', drawingId],
 		queryFn: () => drawingsAPI.get(drawingId),
 		enabled: !!drawingId
-	}))
+	}));
 
 	// Mutation for updating name
 	const updateNameMutation = createMutation(() => ({
 		mutationFn: (name: string) => drawingsAPI.update(drawingId, { name }),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['drawing', drawingId] })
-			queryClient.invalidateQueries({ queryKey: ['drawings'] })
+			queryClient.invalidateQueries({ queryKey: ['drawing', drawingId] });
+			queryClient.invalidateQueries({ queryKey: ['drawings'] });
 		}
-	}))
+	}));
 
-	let initialData = $state<DrawingState | null>(null)
+	let initialData = $state<DrawingState | null>(null);
 
 	// UI state for name editing (Svelte store)
-	let isEditingName = $state(false)
-	let editingName = $state('')
+	let isEditingName = $state(false);
+	let editingName = $state('');
 
 	onMount(async () => {
 		if (!drawingId) {
-			goto('/')
-			return
+			goto('/');
+			return;
 		}
 
 		// Load drawing content from cloud
 		try {
-			const drawing = await drawingsAPI.get(drawingId)
+			const drawing = await drawingsAPI.get(drawingId);
 			initialData = {
 				elements: (drawing.data?.elements || []) as unknown[],
 				appState: (drawing.data?.appState || {}) as unknown,
 				files: (drawing.data?.files || {}) as Record<string, unknown>
-			}
+			};
 		} catch (error) {
-			console.error('Failed to load drawing from cloud:', error)
+			console.error('Failed to load drawing from cloud:', error);
 			// Initialize with empty data if loading fails
 			initialData = {
 				elements: [],
 				appState: {},
 				files: {}
-			}
+			};
 		}
-	})
+	});
 
 	function startEditingName() {
-		if (!drawingQuery.data) return
-		isEditingName = true
-		editingName = drawingQuery.data.name
+		if (!drawingQuery.data) return;
+		isEditingName = true;
+		editingName = drawingQuery.data.name;
 	}
 
 	function saveNameEdit() {
-		if (!editingName.trim()) return
-		updateNameMutation.mutate(editingName.trim())
-		isEditingName = false
+		if (!editingName.trim()) return;
+		updateNameMutation.mutate(editingName.trim());
+		isEditingName = false;
 	}
 
 	function cancelNameEdit() {
-		isEditingName = false
-		editingName = ''
+		isEditingName = false;
+		editingName = '';
 	}
 
 	function handleNameKeydown(event: KeyboardEvent) {
 		if (event.key === 'Enter') {
-			event.preventDefault()
-			saveNameEdit()
+			event.preventDefault();
+			saveNameEdit();
 		} else if (event.key === 'Escape') {
-			cancelNameEdit()
+			cancelNameEdit();
 		}
 	}
 </script>
@@ -107,7 +107,7 @@
 		</a>
 
 		<div class="flex-1 flex justify-center px-4">
-			{#if drawingQuery.isPending}
+			{#if drawingQuery.isFetching}
 				<span class="loading loading-spinner loading-sm"></span>
 			{:else if isEditingName}
 				<input
@@ -130,7 +130,7 @@
 
 		<div class="flex items-center gap-2">
 			<span class="text-sm text-base-content/70">
-				{drawingQuery.isPending ? 'Loading...' : 'Ready'}
+				{drawingQuery.isFetching ? 'Loading...' : 'Ready'}
 			</span>
 		</div>
 	</div>
