@@ -3,6 +3,7 @@
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { drawingsAPI } from '$lib/api';
 	import type { ID } from '$lib/types';
+	import { toastStore } from '$lib/stores/toast';
 
 	const queryClient = useQueryClient();
 
@@ -41,6 +42,35 @@
 		}
 	}));
 
+	// Mutation for duplicating drawing
+	const duplicateDrawingMutation = createMutation(() => ({
+		mutationFn: async (id: string) => {
+			// Fetch original drawing
+			const original = await drawingsAPI.get(id);
+
+			// Create new drawing with copied data and modified name
+			return drawingsAPI.create({
+				name: `${original.name} - Copy`,
+				data: original.data
+			});
+		},
+		onSuccess: (data) => {
+			queryClient.invalidateQueries({ queryKey: ['drawings'] });
+			toastStore.show({
+				type: 'success',
+				message: `Drawing "${data.name}" created successfully`,
+				duration: 3000
+			});
+		},
+		onError: (error) => {
+			toastStore.show({
+				type: 'error',
+				message: error instanceof Error ? error.message : 'Failed to duplicate drawing',
+				duration: 5000
+			});
+		}
+	}));
+
 	// UI state (Svelte stores for UI only)
 	let editingId = $state<ID | null>(null);
 	let editingValue = $state('');
@@ -63,6 +93,10 @@
 		if (confirm('Delete this drawing?')) {
 			deleteDrawingMutation.mutate(id);
 		}
+	}
+
+	function handleDuplicate(id: ID) {
+		duplicateDrawingMutation.mutate(id);
 	}
 
 	function startEditing(id: ID, currentName: string) {
@@ -189,6 +223,7 @@
 											<a
 												href="/drawing/{drawing.id}"
 												class="btn btn-ghost btn-info btn-sm"
+												title="Edit drawing"
 												aria-label="Edit drawing"
 											>
 												<svg
@@ -207,7 +242,30 @@
 												</svg>
 											</a>
 											<button
+												class="btn btn-ghost btn-warning btn-sm"
+												title="Duplicate drawing"
+												onclick={() => handleDuplicate(drawing.id)}
+												disabled={duplicateDrawingMutation.isPending}
+												aria-label="Duplicate drawing"
+											>
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													class="size-4"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+													/>
+												</svg>
+											</button>
+											<button
 												class="btn btn-ghost btn-error btn-sm"
+												title="Delete drawing"
 												onclick={() => handleDelete(drawing.id)}
 												disabled={deleteDrawingMutation.isPending}
 												aria-label="Delete drawing"
