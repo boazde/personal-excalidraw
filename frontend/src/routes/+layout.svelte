@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte'
 	import { authStore } from '$lib/stores/auth'
 	import AuthModal from '$lib/components/AuthModal.svelte'
+	import Toast from '$lib/components/Toast.svelte'
 
 	let { children } = $props()
 
@@ -69,3 +70,5 @@
 		{@render children()}
 	</QueryClientProvider>
 {/if}
+
+<Toast />
