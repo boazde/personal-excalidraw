@@ -118,13 +118,80 @@ Focuses on making the application stable, production-ready, and ready for daily 
 
 **Outcome**: Production-ready application with complete deployment documentation, automated migrations, and containerized deployment. Ready to deploy to any VPS.
 
+## Phase 5: Public Share URL
+
+**Status**: Planned
+
+Enable sharing drawings with public URLs that allow view-only access with temporary editing capabilities.
+
+### Backend Development
+
+- [ ] Database schema updates:
+  - [ ] Add `share_token` column to drawings table (nullable, unique, indexed)
+  - [ ] Migration for new column with unique index
+  - [ ] Drawing is public if `share_token` is not null
+- [ ] New API endpoints:
+  - [ ] `POST /api/drawings/:id/share` - Generate/regenerate public share token
+  - [ ] `DELETE /api/drawings/:id/share` - Revoke public sharing (set share_token to null)
+  - [ ] `GET /api/public/:share_token` - Get drawing by share token (no auth required)
+- [ ] Public endpoint security:
+  - [ ] No authentication required for public endpoints
+  - [ ] Return only drawing content and metadata (no sensitive data)
+  - [ ] Read-only access validation
+  - [ ] Rate limiting for public endpoints
+
+### Frontend Development
+
+- [ ] Share button in drawing editor:
+  - [ ] UI component for "Share Public" button
+  - [ ] Generate share URL on click
+  - [ ] Copy-to-clipboard functionality
+  - [ ] Visual feedback (toast notification)
+  - [ ] Option to revoke sharing
+- [ ] Public view page (`/public/[token]`):
+  - [ ] New route for public share URLs
+  - [ ] Load drawing using share token (no auth)
+  - [ ] Full Excalidraw functionality enabled
+  - [ ] Save/update operations disabled (client-side enforcement)
+  - [ ] All changes are temporary (session-only)
+  - [ ] Clear indication of "View-Only" mode with banner
+  - [ ] Link to landing page (personal-excalidraw.lukenguyen.me)
+  - [ ] No navigation to other pages (isolated view)
+- [ ] Drawing list page updates:
+  - [ ] Visual indicator for publicly shared drawings
+  - [ ] Quick copy share URL from list view
+
+### User Experience
+
+- [ ] Toast notifications:
+  - [ ] "Public link copied to clipboard"
+  - [ ] "Link shared successfully"
+  - [ ] "Sharing disabled"
+- [ ] View-only mode banner:
+  - [ ] Clear messaging about temporary edits
+  - [ ] Reload warning (changes will be lost)
+  - [ ] Link to project landing page
+- [ ] URL structure:
+  - [ ] Clean public URLs: `/public/[share_token]`
+  - [ ] Short, shareable tokens (e.g., UUID or nanoid)
+
+### Goals
+
+- Enable easy sharing of drawings with friends/colleagues
+- Maintain security by keeping drawings view-only
+- Allow temporary collaboration/discussion without affecting original
+- Promote the open-source project through landing page link
+
+**Outcome**: Users can generate public share URLs for drawings that allow anyone to view and temporarily interact with the drawing without authentication or ability to save changes.
+
 ## Future Considerations
 
 ## Milestones
 
-| Phase                            | Target      | Status |
-| -------------------------------- | ----------- | ------ |
-| Phase 1: Frontend Infrastructure | ✅ Complete | Done   |
-| Phase 2: Local Storage           | ✅ Complete | Done   |
-| Phase 3: Backend Integration     | ✅ Complete | Done   |
-| Phase 4: Production Ready        | ✅ Complete | Done   |
+| Phase                            | Target      | Status  |
+| -------------------------------- | ----------- | ------- |
+| Phase 1: Frontend Infrastructure | ✅ Complete | Done    |
+| Phase 2: Local Storage           | ✅ Complete | Done    |
+| Phase 3: Backend Integration     | ✅ Complete | Done    |
+| Phase 4: Production Ready        | ✅ Complete | Done    |
+| Phase 5: Public Share URL        | 📋 Planned  | Pending |
