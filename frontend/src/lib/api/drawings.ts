@@ -110,6 +110,13 @@ class DrawingsAPI {
 		if (!response.ok) throw new Error('Failed to generate share token')
 		return response.json()
 	}
+
+	async revokeShareToken(id: string): Promise<void> {
+		const response = await this.fetchWithAuth(`${this.baseURL}/drawings/${id}/share`, {
+			method: 'DELETE'
+		})
+		if (!response.ok) throw new Error('Failed to revoke share token')
+	}
 }
 
 export const drawingsAPI = new DrawingsAPI()

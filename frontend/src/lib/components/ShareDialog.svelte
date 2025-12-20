@@ -23,6 +23,15 @@
 		}
 	}))
 
+	// Mutation for revoking share token
+	const revokeTokenMutation = createMutation(() => ({
+		mutationFn: () => drawingsAPI.revokeShareToken(drawingId),
+		onSuccess: () => {
+			// Invalidate the drawing query to refetch without the share token
+			queryClient.invalidateQueries({ queryKey: ['drawing', drawingId] })
+		}
+	}))
+
 	// Construct the shareable URL
 	const shareUrl = $derived(
 		shareToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${shareToken}` : ''
@@ -179,6 +188,49 @@
 			</div>
 		{/if}
 
+		{#if revokeTokenMutation.isError}
+			<div class="alert alert-error mb-4">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke-width="1.5"
+					stroke="currentColor"
+					class="w-5 h-5"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+					/>
+				</svg>
+				<span>Failed to revoke share link. Please try again.</span>
+			</div>
+		{/if}
+
+		{#if shareToken}
+			<p class="alert alert-soft alert-warning flex items-start gap-2">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke-width="1.5"
+					stroke="currentColor"
+					class="w-5 h-5 shrink-0"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+					/>
+				</svg>
+				<span
+					>Revoking will invalidate the current share link. Anyone with the old link will no longer
+					be able to access this drawing.</span
+				>
+			</p>
+		{/if}
+
 		<div class="modal-action">
 			{#if !shareToken}
 				<button
@@ -205,6 +257,33 @@
 							/>
 						</svg>
 						Get Share URL
+					{/if}
+				</button>
+			{:else}
+				<button
+					onclick={() => revokeTokenMutation.mutate()}
+					disabled={revokeTokenMutation.isPending}
+					class="btn btn-error"
+				>
+					{#if revokeTokenMutation.isPending}
+						<span class="loading loading-spinner loading-sm"></span>
+						Revoking...
+					{:else}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+							class="w-5 h-5"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+							/>
+						</svg>
+						Revoke Share URL
 					{/if}
 				</button>
 			{/if}

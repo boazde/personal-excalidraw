@@ -153,7 +153,7 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
   - [x] Generate share URL on click
   - [x] Copy-to-clipboard functionality with visual feedback
   - [x] Success notification ("Link copied to clipboard!")
-  - [ ] Option to revoke sharing
+  - [x] Option to revoke sharing
 - [ ] Public view page (`/public/[token]`):
   - [ ] New route for public share URLs
   - [ ] Load drawing using share token (no auth)
@@ -194,10 +194,10 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
 
 ## Milestones
 
-| Phase                            | Target      | Status  |
-| -------------------------------- | ----------- | ------- |
-| Phase 1: Frontend Infrastructure | ✅ Complete | Done    |
-| Phase 2: Local Storage           | ✅ Complete | Done    |
-| Phase 3: Backend Integration     | ✅ Complete | Done    |
-| Phase 4: Production Ready        | ✅ Complete | Done    |
+| Phase                            | Target         | Status           |
+| -------------------------------- | -------------- | ---------------- |
+| Phase 1: Frontend Infrastructure | ✅ Complete    | Done             |
+| Phase 2: Local Storage           | ✅ Complete    | Done             |
+| Phase 3: Backend Integration     | ✅ Complete    | Done             |
+| Phase 4: Production Ready        | ✅ Complete    | Done             |
 | Phase 5: Public Share URL        | 🚧 In Progress | Backend Complete |
