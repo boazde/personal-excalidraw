@@ -43,6 +43,12 @@ type DrawingListOutput struct {
 	Offset   int
 }
 
+// ShareTokenOutput represents the response for share token generation
+type ShareTokenOutput struct {
+	DrawingID  string
+	ShareToken string
+}
+
 // ToOutput converts a domain drawing to a DrawingOutput DTO
 func ToOutput(d *drawing.Drawing) *DrawingOutput {
 	return &DrawingOutput{

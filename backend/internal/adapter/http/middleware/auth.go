@@ -15,7 +15,8 @@ func Auth(cfg *config.Config, publicPaths []string) func(http.Handler) http.Hand
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Skip auth for public paths
 			for _, path := range publicPaths {
-				if r.URL.Path == path {
+				// Check exact match or prefix match for patterns like /public/*
+				if r.URL.Path == path || strings.HasPrefix(r.URL.Path, strings.TrimSuffix(path, "{token}")) {
 					next.ServeHTTP(w, r)
 					return
 				}

@@ -138,6 +138,49 @@ func (r *DrawingRepository) FindBySlug(ctx context.Context, slugParam string) (*
 	return d, nil
 }
 
+// FindByShareToken retrieves a drawing by its share token
+func (r *DrawingRepository) FindByShareToken(ctx context.Context, token string) (*drawing.Drawing, error) {
+	var (
+		drawingID uuid.UUID
+		slug      string
+		name      string
+		dataJSON  []byte
+		shareToken *string
+		createdAt, updatedAt time.Time
+	)
+
+	// Execute select query
+	err := r.pool.QueryRow(ctx, queryFindDrawingByShareToken, token).Scan(
+		&drawingID,
+		&slug,
+		&name,
+		&dataJSON,
+		&shareToken,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, drawing.ErrDrawingNotFound
+		}
+		return nil, fmt.Errorf("failed to find drawing by share token: %w", err)
+	}
+
+	// Parse drawing data from JSON
+	data, err := drawing.FromJSON(dataJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal drawing data: %w", err)
+	}
+
+	// Reconstitute the drawing entity
+	d, err := drawing.Reconstitute(drawingID, slug, name, data, shareToken, createdAt, updatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reconstitute drawing: %w", err)
+	}
+
+	return d, nil
+}
+
 // FindAll retrieves all drawings with pagination
 func (r *DrawingRepository) FindAll(ctx context.Context, limit, offset int) ([]*drawing.Drawing, error) {
 	// Execute select query

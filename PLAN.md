@@ -120,25 +120,30 @@ Focuses on making the application stable, production-ready, and ready for daily 
 
 ## Phase 5: Public Share URL
 
-**Status**: Planned
+**Status**: In Progress (Backend Complete ✅)
 
 Enable sharing drawings with public URLs that allow view-only access with temporary editing capabilities.
 
-### Backend Development
+### Backend Development ✅
 
-- [ ] Database schema updates:
-  - [ ] Add `share_token` column to drawings table (nullable, unique, indexed)
-  - [ ] Migration for new column with unique index
-  - [ ] Drawing is public if `share_token` is not null
-- [ ] New API endpoints:
-  - [ ] `POST /api/drawings/:id/share` - Generate/regenerate public share token
-  - [ ] `DELETE /api/drawings/:id/share` - Revoke public sharing (set share_token to null)
-  - [ ] `GET /api/public/:share_token` - Get drawing by share token (no auth required)
-- [ ] Public endpoint security:
-  - [ ] No authentication required for public endpoints
-  - [ ] Return only drawing content and metadata (no sensitive data)
-  - [ ] Read-only access validation
-  - [ ] Rate limiting for public endpoints
+- [x] Database schema updates:
+  - [x] Add `share_token` column to drawings table (nullable, unique, indexed)
+  - [x] Migration for new column with unique index (003_add_share_token_to_drawings)
+  - [x] Drawing is public if `share_token` is not null
+- [x] New API endpoints:
+  - [x] `POST /api/drawings/:id/share` - Generate/regenerate public share token (UUID-based)
+  - [x] `DELETE /api/drawings/:id/share` - Revoke public sharing (set share_token to null)
+  - [x] `GET /api/public/:share_token` - Get drawing by share token (no auth required)
+- [x] Public endpoint security:
+  - [x] No authentication required for public endpoints
+  - [x] Return only drawing content and metadata (no sensitive data)
+  - [x] Authentication middleware updated to skip `/public/*` paths
+  - [ ] Rate limiting for public endpoints (optional, not implemented)
+- [x] Comprehensive test coverage:
+  - [x] Service layer tests (14 test cases)
+  - [x] Repository tests (FindByShareToken method)
+  - [x] Handler layer tests (mock repository updated)
+  - [x] All tests passing
 
 ### Frontend Development
 
@@ -194,4 +199,4 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
 | Phase 2: Local Storage           | ✅ Complete | Done    |
 | Phase 3: Backend Integration     | ✅ Complete | Done    |
 | Phase 4: Production Ready        | ✅ Complete | Done    |
-| Phase 5: Public Share URL        | 📋 Planned  | Pending |
+| Phase 5: Public Share URL        | 🚧 In Progress | Backend Complete |

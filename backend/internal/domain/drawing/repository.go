@@ -17,6 +17,9 @@ type Repository interface {
 	// FindBySlug retrieves a drawing by slug
 	FindBySlug(ctx context.Context, slug string) (*Drawing, error)
 
+	// FindByShareToken retrieves a drawing by share token
+	FindByShareToken(ctx context.Context, token string) (*Drawing, error)
+
 	// FindAll retrieves all drawings with pagination
 	FindAll(ctx context.Context, limit, offset int) ([]*Drawing, error)
 

@@ -21,6 +21,13 @@ const (
 		WHERE slug = $1
 	`
 
+	// queryFindDrawingByShareToken retrieves a drawing by its share token
+	queryFindDrawingByShareToken = `
+		SELECT id, slug, name, data, share_token, created_at, updated_at
+		FROM drawings
+		WHERE share_token = $1
+	`
+
 	// queryFindAllDrawings retrieves all drawings with pagination
 	queryFindAllDrawings = `
 		SELECT id, slug, name, data, share_token, created_at, updated_at
@@ -34,6 +41,13 @@ const (
 		UPDATE drawings
 		SET name = $1, data = $2, updated_at = $3
 		WHERE id = $4
+	`
+
+	// queryUpdateShareToken updates the share token for a drawing
+	queryUpdateShareToken = `
+		UPDATE drawings
+		SET share_token = $1, updated_at = $2
+		WHERE id = $3
 	`
 
 	// queryDeleteDrawing deletes a drawing by ID
