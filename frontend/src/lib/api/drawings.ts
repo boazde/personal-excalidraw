@@ -117,6 +117,13 @@ class DrawingsAPI {
 		})
 		if (!response.ok) throw new Error('Failed to revoke share token')
 	}
+
+	async getByShareToken(shareToken: string): Promise<DrawingDTO> {
+		// Public endpoint - no auth required
+		const response = await fetch(`${this.baseURL}/public/${shareToken}`)
+		if (!response.ok) throw new Error('Failed to fetch public drawing')
+		return response.json()
+	}
 }
 
 export const drawingsAPI = new DrawingsAPI()

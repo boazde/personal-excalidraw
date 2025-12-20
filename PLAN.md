@@ -145,7 +145,7 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
   - [x] Handler layer tests (mock repository updated)
   - [x] All tests passing
 
-### Frontend Development (~40% Complete)
+### Frontend Development (~85% Complete)
 
 - [x] Share button in drawing editor:
   - [x] UI component for "Share Public" button (ShareButton.svelte)
@@ -154,32 +154,35 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
   - [x] Copy-to-clipboard functionality with visual feedback
   - [x] Success notification ("Link copied to clipboard!")
   - [x] Option to revoke sharing
-- [ ] Public view page (`/public/[token]`):
-  - [ ] New route for public share URLs
-  - [ ] Load drawing using share token (no auth)
-  - [ ] Full Excalidraw functionality enabled
-  - [ ] Save/update operations disabled (client-side enforcement)
-  - [ ] All changes are temporary (session-only)
-  - [ ] Clear indication of "View-Only" mode with banner
-  - [ ] Link to landing page (personal-excalidraw.lukenguyen.me)
-  - [ ] No navigation to other pages (isolated view)
+- [x] Public view page (`/public/[token]`):
+  - [x] New route for public share URLs
+  - [x] Load drawing using share token (no auth)
+  - [x] Full Excalidraw functionality enabled
+  - [x] Save/update operations disabled (client-side enforcement)
+  - [x] All changes are temporary (session-only)
+  - [x] Clear indication of "View-Only" mode with banner
+  - [x] Link to landing page (personal-excalidraw.lukenguyen.me)
+  - [x] No navigation to other pages (isolated view)
+  - [x] API endpoint for fetching public drawings (getByShareToken)
+  - [x] PublicExcalidrawWrapper component for view-only mode
+  - [x] Error handling for invalid/expired tokens
 - [ ] Drawing list page updates:
   - [ ] Visual indicator for publicly shared drawings
   - [ ] Quick copy share URL from list view
 
 ### User Experience
 
-- [ ] Toast notifications:
-  - [ ] "Public link copied to clipboard"
-  - [ ] "Link shared successfully"
-  - [ ] "Sharing disabled"
-- [ ] View-only mode banner:
-  - [ ] Clear messaging about temporary edits
-  - [ ] Reload warning (changes will be lost)
-  - [ ] Link to project landing page
-- [ ] URL structure:
-  - [ ] Clean public URLs: `/public/[share_token]`
-  - [ ] Short, shareable tokens (e.g., UUID or nanoid)
+- [x] Toast notifications:
+  - [x] "Public link copied to clipboard"
+  - [x] "Link shared successfully"
+  - [x] "Sharing disabled"
+- [x] View-only mode banner:
+  - [x] Clear messaging about temporary edits
+  - [x] Reload warning (changes will be lost)
+  - [x] Link to project landing page
+- [x] URL structure:
+  - [x] Clean public URLs: `/public/[share_token]`
+  - [x] Short, shareable tokens (UUID-based)
 
 ### Goals
 

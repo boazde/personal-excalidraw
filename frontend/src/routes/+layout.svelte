@@ -3,6 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg'
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query'
 	import { browser } from '$app/environment'
+	import { page } from '$app/stores'
 	import { onMount } from 'svelte'
 	import { authStore } from '$lib/stores/auth'
 	import AuthModal from '$lib/components/AuthModal.svelte'
@@ -12,6 +13,7 @@
 
 	let showAuthModal = $state(false)
 	let authChecked = $state(false)
+	let isPublicRoute = $state(false)
 
 	const queryClient = new QueryClient({
 		defaultOptions: {
@@ -32,17 +34,31 @@
 
 	// Check auth only in browser, after mount (prevents SSR hydration issues)
 	onMount(() => {
-		const hasKey = authStore.hasAccessKey()
-		showAuthModal = !hasKey
-		authChecked = true
+		// Check if current route is public (share or public routes)
+		const unsubscribe = page.subscribe(($page) => {
+			isPublicRoute = $page.url.pathname.startsWith('/share/') || $page.url.pathname.startsWith('/public/')
 
-		// Listen for auth errors from API calls
+			// Skip auth check for public routes
+			if (isPublicRoute) {
+				showAuthModal = false
+				authChecked = true
+			} else {
+				const hasKey = authStore.hasAccessKey()
+				showAuthModal = !hasKey
+				authChecked = true
+			}
+		})
+
+		// Listen for auth errors from API calls (but ignore on public routes)
 		const handleAuthRequired = () => {
-			showAuthModal = true
+			if (!isPublicRoute) {
+				showAuthModal = true
+			}
 		}
 		window.addEventListener('auth:required', handleAuthRequired)
 
 		return () => {
+			unsubscribe()
 			window.removeEventListener('auth:required', handleAuthRequired)
 		}
 	})

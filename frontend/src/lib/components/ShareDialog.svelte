@@ -70,6 +70,12 @@
 		open = false
 		copySuccess = false
 	}
+
+	function handleRevoke() {
+		if (confirm('Are you sure you want to revoke this share URL? Anyone with the old link will no longer be able to access this drawing.')) {
+			revokeTokenMutation.mutate()
+		}
+	}
 </script>
 
 <dialog bind:this={modal} class="modal" onclose={handleClose}>
@@ -86,69 +92,13 @@
 				<div class="join w-full">
 					<div
 						id="share-url-input"
-						class="input input-bordered join-item w-full font-mono text-sm overflow-x-auto whitespace-nowrap"
+						class="input input-bordered join-item font-mono text-ellipsis overflow-hidden pr-8 text-sm flex-1"
 					>
-						{shareUrl}
+						<span>
+							{shareUrl}
+						</span>
 					</div>
-					<button
-						onclick={copyToClipboard}
-						class="btn join-item"
-						title={copySuccess ? 'Copied!' : 'Copy to clipboard'}
-					>
-						{#if copySuccess}
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								class="w-5 h-5 text-success"
-							>
-								<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-							</svg>
-						{:else}
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="1.5"
-								stroke="currentColor"
-								class="w-5 h-5"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
-								/>
-							</svg>
-						{/if}
-					</button>
-				</div>
-				{#if copySuccess}
-					<p class="text-success text-sm mt-2 flex items-center gap-1">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="1.5"
-							stroke="currentColor"
-							class="w-4 h-4"
-						>
-							<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-						</svg>
-						Link copied to clipboard!
-					</p>
-				{/if}
-			{:else}
-				<div class="join w-full">
-					<div class="input input-bordered join-item w-full text-sm text-base-content/50">
-						Click 'Generate' button below to create a shareable link
-					</div>
-					<button
-						class="btn join-item"
-						disabled
-						aria-label="Copy button (disabled until link is generated)"
-					>
+					<button onclick={handleRevoke} class="btn btn-error join-item" title="Revoke share URL">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
@@ -160,10 +110,17 @@
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
-								d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
+								d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
 							/>
 						</svg>
+						Revoke
 					</button>
+				</div>
+			{:else}
+				<div class="w-full">
+					<div class="input input-bordered w-full text-sm text-base-content/50">
+						Click 'Generate Share URL' button below to create a shareable link
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -256,18 +213,27 @@
 								d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
 							/>
 						</svg>
-						Get Share URL
+						Generate Share URL
 					{/if}
 				</button>
 			{:else}
 				<button
-					onclick={() => revokeTokenMutation.mutate()}
-					disabled={revokeTokenMutation.isPending}
-					class="btn btn-error"
+					onclick={copyToClipboard}
+					class="btn btn-primary"
+					title={copySuccess ? 'Copied!' : 'Copy share URL to clipboard'}
 				>
-					{#if revokeTokenMutation.isPending}
-						<span class="loading loading-spinner loading-sm"></span>
-						Revoking...
+					{#if copySuccess}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+							class="w-5 h-5 text-success"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+						</svg>
+						Copied!
 					{:else}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -280,10 +246,10 @@
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
-								d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+								d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
 							/>
 						</svg>
-						Revoke Share URL
+						Copy Share URL
 					{/if}
 				</button>
 			{/if}

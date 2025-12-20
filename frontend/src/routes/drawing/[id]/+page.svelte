@@ -38,6 +38,9 @@
 	// UI state for share dialog
 	let shareDialogOpen = $state(false);
 
+	// Track saving state from ExcalidrawWrapper
+	let isSaving = $state(false);
+
 	onMount(async () => {
 		if (!drawingId) {
 			goto('/');
@@ -141,16 +144,28 @@
 			<!-- Share button -->
 			<ShareButton onclick={openShareDialog} />
 
-			<span class="text-xs text-base-content/70">
-				{drawingQuery.isFetching ? 'Loading...' : 'Ready'}
-			</span>
+			{#if drawingQuery.isFetching}
+				<span class="loading loading-spinner loading-xs"></span>
+				<span class="text-xs text-base-content/70">Loading...</span>
+			{:else if isSaving}
+				<span class="loading loading-spinner loading-xs"></span>
+				<span class="text-xs text-base-content/70">Saving...</span>
+			{:else if drawingQuery.data}
+				<span class="text-xs text-base-content/70">Ready</span>
+			{/if}
 		</div>
 	</div>
 
 	<!-- Drawing canvas -->
 	<div class="flex-1 flex overflow-hidden">
 		{#if initialData && drawingId}
-			<ExcalidrawWrapper {drawingId} {initialData} />
+			<ExcalidrawWrapper
+				{drawingId}
+				{initialData}
+				onSavingChange={(saving) => {
+					isSaving = saving;
+				}}
+			/>
 		{:else}
 			<div class="flex items-center justify-center w-full h-full">
 				<span class="loading loading-spinner loading-lg"></span>
