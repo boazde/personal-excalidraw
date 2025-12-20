@@ -41,6 +41,7 @@ func (r *DrawingRepository) Create(ctx context.Context, d *drawing.Drawing) erro
 		d.Slug(),
 		d.Name(),
 		dataJSON,
+		d.ShareToken(),
 		d.CreatedAt(),
 		d.UpdatedAt(),
 	)
@@ -58,6 +59,7 @@ func (r *DrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*drawin
 		slug      string
 		name      string
 		dataJSON  []byte
+		shareToken *string
 		createdAt, updatedAt time.Time
 	)
 
@@ -67,6 +69,7 @@ func (r *DrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*drawin
 		&slug,
 		&name,
 		&dataJSON,
+		&shareToken,
 		&createdAt,
 		&updatedAt,
 	)
@@ -84,7 +87,7 @@ func (r *DrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*drawin
 	}
 
 	// Reconstitute the drawing entity
-	d, err := drawing.Reconstitute(drawingID, slug, name, data, createdAt, updatedAt)
+	d, err := drawing.Reconstitute(drawingID, slug, name, data, shareToken, createdAt, updatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reconstitute drawing: %w", err)
 	}
@@ -99,6 +102,7 @@ func (r *DrawingRepository) FindBySlug(ctx context.Context, slugParam string) (*
 		slug      string
 		name      string
 		dataJSON  []byte
+		shareToken *string
 		createdAt, updatedAt time.Time
 	)
 
@@ -108,6 +112,7 @@ func (r *DrawingRepository) FindBySlug(ctx context.Context, slugParam string) (*
 		&slug,
 		&name,
 		&dataJSON,
+		&shareToken,
 		&createdAt,
 		&updatedAt,
 	)
@@ -125,7 +130,7 @@ func (r *DrawingRepository) FindBySlug(ctx context.Context, slugParam string) (*
 	}
 
 	// Reconstitute the drawing entity
-	d, err := drawing.Reconstitute(drawingID, slug, name, data, createdAt, updatedAt)
+	d, err := drawing.Reconstitute(drawingID, slug, name, data, shareToken, createdAt, updatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reconstitute drawing: %w", err)
 	}
@@ -150,10 +155,11 @@ func (r *DrawingRepository) FindAll(ctx context.Context, limit, offset int) ([]*
 			slug      string
 			name      string
 			dataJSON  []byte
+			shareToken *string
 			createdAt, updatedAt time.Time
 		)
 
-		if err := rows.Scan(&drawingID, &slug, &name, &dataJSON, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&drawingID, &slug, &name, &dataJSON, &shareToken, &createdAt, &updatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan drawing row: %w", err)
 		}
 
@@ -164,7 +170,7 @@ func (r *DrawingRepository) FindAll(ctx context.Context, limit, offset int) ([]*
 		}
 
 		// Reconstitute the drawing entity
-		d, err := drawing.Reconstitute(drawingID, slug, name, data, createdAt, updatedAt)
+		d, err := drawing.Reconstitute(drawingID, slug, name, data, shareToken, createdAt, updatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to reconstitute drawing: %w", err)
 		}
