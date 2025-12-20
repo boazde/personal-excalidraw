@@ -236,12 +236,13 @@ func (r *DrawingRepository) Update(ctx context.Context, d *drawing.Drawing) erro
 		return fmt.Errorf("failed to marshal drawing data: %w", err)
 	}
 
-	// Execute update query
+	// Execute update query - now includes share_token
 	result, err := r.pool.Exec(
 		ctx,
-		queryUpdateDrawing,
+		`UPDATE drawings SET name = $1, data = $2, share_token = $3, updated_at = $4 WHERE id = $5`,
 		d.Name(),
 		dataJSON,
+		d.ShareToken(),
 		d.UpdatedAt(),
 		d.ID(),
 	)

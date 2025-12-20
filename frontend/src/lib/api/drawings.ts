@@ -3,6 +3,7 @@ export interface DrawingDTO {
 	id: string
 	name: string
 	data: Record<string, unknown>
+	share_token?: string
 	created_at: string
 	updated_at: string
 }
@@ -100,6 +101,14 @@ class DrawingsAPI {
 			method: 'DELETE'
 		})
 		if (!response.ok) throw new Error('Failed to delete drawing')
+	}
+
+	async generateShareToken(id: string): Promise<{ drawing_id: string; share_token: string }> {
+		const response = await this.fetchWithAuth(`${this.baseURL}/drawings/${id}/share`, {
+			method: 'POST'
+		})
+		if (!response.ok) throw new Error('Failed to generate share token')
+		return response.json()
 	}
 }
 

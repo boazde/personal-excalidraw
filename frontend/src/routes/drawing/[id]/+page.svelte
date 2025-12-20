@@ -5,6 +5,8 @@
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { drawingsAPI } from '$lib/api';
 	import ExcalidrawWrapper from '$lib/components/ExcalidrawWrapper.svelte';
+	import ShareButton from '$lib/components/ShareButton.svelte';
+	import ShareDialog from '$lib/components/ShareDialog.svelte';
 	import type { DrawingState } from '$lib/stores/drawing';
 	import type { ID } from '$lib/types';
 
@@ -32,6 +34,9 @@
 	// UI state for name editing (Svelte store)
 	let isEditingName = $state(false);
 	let editingName = $state('');
+
+	// UI state for share dialog
+	let shareDialogOpen = $state(false);
 
 	onMount(async () => {
 		if (!drawingId) {
@@ -83,6 +88,10 @@
 			cancelNameEdit();
 		}
 	}
+
+	function openShareDialog() {
+		shareDialogOpen = true;
+	}
 </script>
 
 <div class="h-screen w-screen flex flex-col bg-base-100">
@@ -129,7 +138,10 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<span class="text-sm text-base-content/70">
+			<!-- Share button -->
+			<ShareButton onclick={openShareDialog} />
+
+			<span class="text-xs text-base-content/70">
 				{drawingQuery.isFetching ? 'Loading...' : 'Ready'}
 			</span>
 		</div>
@@ -146,3 +158,6 @@
 		{/if}
 	</div>
 </div>
+
+<!-- Share Dialog -->
+<ShareDialog bind:open={shareDialogOpen} shareToken={drawingQuery.data?.share_token} {drawingId} />

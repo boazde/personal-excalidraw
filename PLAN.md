@@ -145,13 +145,14 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
   - [x] Handler layer tests (mock repository updated)
   - [x] All tests passing
 
-### Frontend Development
+### Frontend Development (~40% Complete)
 
-- [ ] Share button in drawing editor:
-  - [ ] UI component for "Share Public" button
-  - [ ] Generate share URL on click
-  - [ ] Copy-to-clipboard functionality
-  - [ ] Visual feedback (toast notification)
+- [x] Share button in drawing editor:
+  - [x] UI component for "Share Public" button (ShareButton.svelte)
+  - [x] ShareDialog component with modal UI
+  - [x] Generate share URL on click
+  - [x] Copy-to-clipboard functionality with visual feedback
+  - [x] Success notification ("Link copied to clipboard!")
   - [ ] Option to revoke sharing
 - [ ] Public view page (`/public/[token]`):
   - [ ] New route for public share URLs

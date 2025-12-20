@@ -538,6 +538,60 @@ func TestGetDrawing(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:      "get drawing with share token",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Drawing with Share Token", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					// Set a share token for this drawing
+					token := "test-share-token-abc123"
+					d.SetShareToken(&token)
+					return d, nil
+				},
+			},
+			expectedStatus: http.StatusOK,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp DrawingResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.ShareToken == nil {
+					t.Error("expected share_token to be present")
+				}
+				if resp.ShareToken != nil && *resp.ShareToken == "" {
+					t.Error("expected share_token to be non-empty")
+				}
+				if resp.ShareToken != nil && *resp.ShareToken != "test-share-token-abc123" {
+					t.Errorf("expected share_token to be 'test-share-token-abc123', got '%s'", *resp.ShareToken)
+				}
+			},
+		},
+		{
+			name:      "get drawing without share token",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Drawing without Share Token", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					// Don't generate share token
+					return d, nil
+				},
+			},
+			expectedStatus: http.StatusOK,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp DrawingResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.ShareToken != nil {
+					t.Errorf("expected share_token to be nil, got %v", *resp.ShareToken)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

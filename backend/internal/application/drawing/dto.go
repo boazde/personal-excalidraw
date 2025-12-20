@@ -28,11 +28,12 @@ type ListDrawingsInput struct {
 
 // DrawingOutput represents a drawing response
 type DrawingOutput struct {
-	ID        uuid.UUID
-	Name      string
-	Data      map[string]interface{}
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         uuid.UUID
+	Name       string
+	Data       map[string]interface{}
+	ShareToken *string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // DrawingListOutput represents a paginated list of drawings
@@ -52,11 +53,12 @@ type ShareTokenOutput struct {
 // ToOutput converts a domain drawing to a DrawingOutput DTO
 func ToOutput(d *drawing.Drawing) *DrawingOutput {
 	return &DrawingOutput{
-		ID:        d.ID(),
-		Name:      d.Name(),
-		Data:      d.Data(),
-		CreatedAt: d.CreatedAt(),
-		UpdatedAt: d.UpdatedAt(),
+		ID:         d.ID(),
+		Name:       d.Name(),
+		Data:       d.Data(),
+		ShareToken: d.ShareToken(),
+		CreatedAt:  d.CreatedAt(),
+		UpdatedAt:  d.UpdatedAt(),
 	}
 }
 

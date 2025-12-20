@@ -39,8 +39,8 @@ const (
 	// queryUpdateDrawing updates an existing drawing
 	queryUpdateDrawing = `
 		UPDATE drawings
-		SET name = $1, data = $2, updated_at = $3
-		WHERE id = $4
+		SET name = $1, data = $2, share_token = $3, updated_at = $4
+		WHERE id = $5
 	`
 
 	// queryUpdateShareToken updates the share token for a drawing
