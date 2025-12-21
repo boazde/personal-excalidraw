@@ -14,13 +14,14 @@ import (
 
 // mockDrawingRepository is a mock implementation of the drawing repository
 type mockDrawingRepository struct {
-	createFunc     func(ctx context.Context, d *drawing.Drawing) error
-	findAllFunc    func(ctx context.Context, limit, offset int) ([]*drawing.Drawing, error)
-	countFunc      func(ctx context.Context) (int64, error)
-	findByIDFunc   func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error)
-	findBySlugFunc func(ctx context.Context, slug string) (*drawing.Drawing, error)
-	updateFunc     func(ctx context.Context, d *drawing.Drawing) error
-	deleteFunc     func(ctx context.Context, id uuid.UUID) error
+	createFunc           func(ctx context.Context, d *drawing.Drawing) error
+	findAllFunc          func(ctx context.Context, limit, offset int) ([]*drawing.Drawing, error)
+	countFunc            func(ctx context.Context) (int64, error)
+	findByIDFunc         func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error)
+	findBySlugFunc       func(ctx context.Context, slug string) (*drawing.Drawing, error)
+	findByShareTokenFunc func(ctx context.Context, token string) (*drawing.Drawing, error)
+	updateFunc           func(ctx context.Context, d *drawing.Drawing) error
+	deleteFunc           func(ctx context.Context, id uuid.UUID) error
 }
 
 func (m *mockDrawingRepository) Create(ctx context.Context, d *drawing.Drawing) error {
@@ -54,6 +55,13 @@ func (m *mockDrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*dr
 func (m *mockDrawingRepository) FindBySlug(ctx context.Context, slug string) (*drawing.Drawing, error) {
 	if m.findBySlugFunc != nil {
 		return m.findBySlugFunc(ctx, slug)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockDrawingRepository) FindByShareToken(ctx context.Context, token string) (*drawing.Drawing, error) {
+	if m.findByShareTokenFunc != nil {
+		return m.findByShareTokenFunc(ctx, token)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -879,6 +887,7 @@ func TestUpdateDrawing(t *testing.T) {
 						"original",
 						"Original",
 						map[string]interface{}{"elements": []interface{}{}},
+						nil, // No share token
 						time.Now().Add(-24*time.Hour),
 						time.Now().Add(-24*time.Hour),
 					)
@@ -1003,6 +1012,336 @@ func TestDeleteDrawing(t *testing.T) {
 			}
 			if !tt.expectError && err != nil {
 				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestGenerateShareToken(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	tests := []struct {
+		name        string
+		drawingID   string
+		mockRepo    *mockDrawingRepository
+		expectError bool
+		validateOut func(t *testing.T, out *ShareTokenOutput)
+	}{
+		{
+			name:      "successful token generation",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					// Verify that share token was set
+					if d.ShareToken() == nil {
+						t.Error("expected share token to be set")
+					}
+					return nil
+				},
+			},
+			expectError: false,
+			validateOut: func(t *testing.T, out *ShareTokenOutput) {
+				if out == nil {
+					t.Error("expected output but got nil")
+					return
+				}
+				if out.ShareToken == "" {
+					t.Error("expected share token to be generated")
+				}
+				if out.DrawingID == "" {
+					t.Error("expected drawing ID to be set")
+				}
+			},
+		},
+		{
+			name:        "invalid drawing ID format",
+			drawingID:   "invalid-uuid",
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+		},
+		{
+			name:      "drawing not found",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:      "update failure",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return errors.New("database error")
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:      "regenerate existing token",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					// Set existing token
+					existingToken := "existing-token"
+					d.SetShareToken(&existingToken)
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					// Verify that a new token was generated (different from existing)
+					if d.ShareToken() == nil {
+						t.Error("expected share token to be set")
+					} else if *d.ShareToken() == "existing-token" {
+						t.Error("expected new token to be different from existing")
+					}
+					return nil
+				},
+			},
+			expectError: false,
+			validateOut: func(t *testing.T, out *ShareTokenOutput) {
+				if out == nil {
+					t.Error("expected output but got nil")
+					return
+				}
+				if out.ShareToken == "existing-token" {
+					t.Error("expected new token, not existing token")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewService(tt.mockRepo, logger)
+			out, err := service.GenerateShareToken(context.Background(), tt.drawingID)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if !tt.expectError && tt.validateOut != nil {
+				tt.validateOut(t, out)
+			}
+		})
+	}
+}
+
+func TestRevokeShareToken(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	tests := []struct {
+		name        string
+		drawingID   string
+		mockRepo    *mockDrawingRepository
+		expectError bool
+	}{
+		{
+			name:      "successful token revocation",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					// Set existing token
+					token := "existing-token"
+					d.SetShareToken(&token)
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					// Verify that share token was removed
+					if d.ShareToken() != nil {
+						t.Error("expected share token to be nil")
+					}
+					return nil
+				},
+			},
+			expectError: false,
+		},
+		{
+			name:        "invalid drawing ID format",
+			drawingID:   "invalid-uuid",
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+		},
+		{
+			name:      "drawing not found",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:      "update failure",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					token := "existing-token"
+					d.SetShareToken(&token)
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return errors.New("database error")
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:      "revoke already null token",
+			drawingID: uuid.New().String(),
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					// No token set (already nil)
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					if d.ShareToken() != nil {
+						t.Error("expected share token to remain nil")
+					}
+					return nil
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewService(tt.mockRepo, logger)
+			err := service.RevokeShareToken(context.Background(), tt.drawingID)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetPublicDrawing(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	validToken := "valid-token-123"
+	testDrawingID := uuid.New()
+
+	tests := []struct {
+		name        string
+		token       string
+		mockRepo    *mockDrawingRepository
+		expectError bool
+		validateOut func(t *testing.T, out *DrawingOutput)
+	}{
+		{
+			name:  "successful public drawing retrieval",
+			token: validToken,
+			mockRepo: &mockDrawingRepository{
+				findByShareTokenFunc: func(ctx context.Context, token string) (*drawing.Drawing, error) {
+					if token != validToken {
+						t.Errorf("expected token %s, got %s", validToken, token)
+					}
+					d, _ := drawing.Reconstitute(
+						testDrawingID,
+						"test-slug",
+						"Test Public Drawing",
+						map[string]interface{}{
+							"elements": []interface{}{},
+						},
+						&validToken,
+						time.Now(),
+						time.Now(),
+					)
+					return d, nil
+				},
+			},
+			expectError: false,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out == nil {
+					t.Error("expected output but got nil")
+					return
+				}
+				if out.Name != "Test Public Drawing" {
+					t.Errorf("expected name 'Test Public Drawing', got '%s'", out.Name)
+				}
+				if out.ID != testDrawingID {
+					t.Errorf("expected ID %s, got %s", testDrawingID, out.ID)
+				}
+			},
+		},
+		{
+			name:  "drawing not found with invalid token",
+			token: "invalid-token",
+			mockRepo: &mockDrawingRepository{
+				findByShareTokenFunc: func(ctx context.Context, token string) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:  "empty token",
+			token: "",
+			mockRepo: &mockDrawingRepository{
+				findByShareTokenFunc: func(ctx context.Context, token string) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:  "repository error",
+			token: validToken,
+			mockRepo: &mockDrawingRepository{
+				findByShareTokenFunc: func(ctx context.Context, token string) (*drawing.Drawing, error) {
+					return nil, errors.New("database connection error")
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewService(tt.mockRepo, logger)
+			out, err := service.GetPublicDrawing(context.Background(), tt.token)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if !tt.expectError && tt.validateOut != nil {
+				tt.validateOut(t, out)
 			}
 		})
 	}

@@ -118,6 +118,81 @@ Focuses on making the application stable, production-ready, and ready for daily 
 
 **Outcome**: Production-ready application with complete deployment documentation, automated migrations, and containerized deployment. Ready to deploy to any VPS.
 
+## Phase 5: Public Share URL
+
+**Status**: In Progress (Backend Complete ✅)
+
+Enable sharing drawings with public URLs that allow view-only access with temporary editing capabilities.
+
+### Backend Development ✅
+
+- [x] Database schema updates:
+  - [x] Add `share_token` column to drawings table (nullable, unique, indexed)
+  - [x] Migration for new column with unique index (003_add_share_token_to_drawings)
+  - [x] Drawing is public if `share_token` is not null
+- [x] New API endpoints:
+  - [x] `POST /api/drawings/:id/share` - Generate/regenerate public share token (UUID-based)
+  - [x] `DELETE /api/drawings/:id/share` - Revoke public sharing (set share_token to null)
+  - [x] `GET /api/public/:share_token` - Get drawing by share token (no auth required)
+- [x] Public endpoint security:
+  - [x] No authentication required for public endpoints
+  - [x] Return only drawing content and metadata (no sensitive data)
+  - [x] Authentication middleware updated to skip `/public/*` paths
+  - [ ] Rate limiting for public endpoints (optional, not implemented)
+- [x] Comprehensive test coverage:
+  - [x] Service layer tests (14 test cases)
+  - [x] Repository tests (FindByShareToken method)
+  - [x] Handler layer tests (mock repository updated)
+  - [x] All tests passing
+
+### Frontend Development ✅
+
+- [x] Share button in drawing editor:
+  - [x] UI component for "Share Public" button (ShareButton.svelte)
+  - [x] ShareDialog component with modal UI
+  - [x] Generate share URL on click
+  - [x] Copy-to-clipboard functionality with visual feedback
+  - [x] Success notification ("Link copied to clipboard!")
+  - [x] Option to revoke sharing
+- [x] Public view page (`/public/[token]`):
+  - [x] New route for public share URLs
+  - [x] Load drawing using share token (no auth)
+  - [x] Full Excalidraw functionality enabled
+  - [x] Save/update operations disabled (client-side enforcement)
+  - [x] All changes are temporary (session-only)
+  - [x] Clear indication of "View-Only" mode with banner
+  - [x] Link to landing page (personal-excalidraw.lukenguyen.me)
+  - [x] No navigation to other pages (isolated view)
+  - [x] API endpoint for fetching public drawings (getByShareToken)
+  - [x] PublicExcalidrawWrapper component for view-only mode
+  - [x] Error handling for invalid/expired tokens
+- [x] Drawing list page updates:
+  - [x] Visual indicator for publicly shared drawings
+  - [x] Quick copy share URL from list view
+
+### User Experience ✅
+
+- [x] Toast notifications:
+  - [x] "Public link copied to clipboard"
+  - [x] "Link shared successfully"
+  - [x] "Sharing disabled"
+- [x] View-only mode banner:
+  - [x] Clear messaging about temporary edits
+  - [x] Reload warning (changes will be lost)
+  - [x] Link to project landing page
+- [x] URL structure:
+  - [x] Clean public URLs: `/share/[share_token]`
+  - [x] Short, shareable tokens (UUID-based)
+
+### Goals
+
+- Enable easy sharing of drawings with friends/colleagues
+- Maintain security by keeping drawings view-only
+- Allow temporary collaboration/discussion without affecting original
+- Promote the open-source project through landing page link
+
+**Outcome**: Users can generate public share URLs for drawings that allow anyone to view and temporarily interact with the drawing without authentication or ability to save changes.
+
 ## Future Considerations
 
 ## Milestones
@@ -128,3 +203,4 @@ Focuses on making the application stable, production-ready, and ready for daily 
 | Phase 2: Local Storage           | ✅ Complete | Done   |
 | Phase 3: Backend Integration     | ✅ Complete | Done   |
 | Phase 4: Production Ready        | ✅ Complete | Done   |
+| Phase 5: Public Share URL        | ✅ Complete | Done   |

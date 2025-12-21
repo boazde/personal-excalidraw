@@ -33,9 +33,16 @@ func NewRouter(
 	mux.HandleFunc("PUT /drawings/{id}", drawingHandler.UpdateDrawing)
 	mux.HandleFunc("DELETE /drawings/{id}", drawingHandler.DeleteDrawing)
 
+	// Share token endpoints (authenticated)
+	mux.HandleFunc("POST /drawings/{id}/share", drawingHandler.GenerateShareToken)
+	mux.HandleFunc("DELETE /drawings/{id}/share", drawingHandler.RevokeShareToken)
+
+	// Public endpoints (no authentication required)
+	mux.HandleFunc("GET /public/{token}", drawingHandler.GetPublicDrawing)
+
 	// Apply middleware stack (in reverse order - outermost first)
 	var handler http.Handler = mux
-	handler = middleware.Auth(cfg, []string{"/health"})(handler)
+	handler = middleware.Auth(cfg, []string{"/health", "/public/{token}"})(handler)
 	handler = middleware.CORS(cfg)(handler)
 	handler = middleware.Logger(logger)(handler)
 	handler = middleware.RequestID(handler)

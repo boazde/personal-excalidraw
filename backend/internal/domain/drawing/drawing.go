@@ -14,12 +14,13 @@ const (
 
 // Drawing represents the drawing aggregate root
 type Drawing struct {
-	id        uuid.UUID
-	slug      string
-	name      string
-	data      DrawingData
-	createdAt time.Time
-	updatedAt time.Time
+	id         uuid.UUID
+	slug       string
+	name       string
+	data       DrawingData
+	shareToken *string // Nullable - only set when drawing is publicly shared
+	createdAt  time.Time
+	updatedAt  time.Time
 }
 
 // NewDrawing creates a new drawing with validation
@@ -46,14 +47,15 @@ func (d *Drawing) SetSlug(slug string) {
 }
 
 // Reconstitute creates a drawing from persisted data (for repository use)
-func Reconstitute(id uuid.UUID, slug, name string, data DrawingData, createdAt, updatedAt time.Time) (*Drawing, error) {
+func Reconstitute(id uuid.UUID, slug, name string, data DrawingData, shareToken *string, createdAt, updatedAt time.Time) (*Drawing, error) {
 	d := &Drawing{
-		id:        id,
-		slug:      slug,
-		name:      name,
-		data:      data,
-		createdAt: createdAt,
-		updatedAt: updatedAt,
+		id:         id,
+		slug:       slug,
+		name:       name,
+		data:       data,
+		shareToken: shareToken,
+		createdAt:  createdAt,
+		updatedAt:  updatedAt,
 	}
 
 	if err := d.Validate(); err != nil {
@@ -130,4 +132,15 @@ func (d *Drawing) CreatedAt() time.Time {
 // UpdatedAt returns the last update timestamp
 func (d *Drawing) UpdatedAt() time.Time {
 	return d.updatedAt
+}
+
+// ShareToken returns the share token (nil if not shared)
+func (d *Drawing) ShareToken() *string {
+	return d.shareToken
+}
+
+// SetShareToken sets the share token for public sharing
+func (d *Drawing) SetShareToken(token *string) {
+	d.shareToken = token
+	d.updatedAt = time.Now().UTC()
 }

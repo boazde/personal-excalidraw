@@ -18,13 +18,14 @@ import (
 
 // mockDrawingRepository is a mock implementation for testing
 type mockDrawingRepository struct {
-	createFunc     func(ctx context.Context, d *drawing.Drawing) error
-	findAllFunc    func(ctx context.Context, limit, offset int) ([]*drawing.Drawing, error)
-	countFunc      func(ctx context.Context) (int64, error)
-	findByIDFunc   func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error)
-	findBySlugFunc func(ctx context.Context, slug string) (*drawing.Drawing, error)
-	updateFunc     func(ctx context.Context, d *drawing.Drawing) error
-	deleteFunc     func(ctx context.Context, id uuid.UUID) error
+	createFunc           func(ctx context.Context, d *drawing.Drawing) error
+	findAllFunc          func(ctx context.Context, limit, offset int) ([]*drawing.Drawing, error)
+	countFunc            func(ctx context.Context) (int64, error)
+	findByIDFunc         func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error)
+	findBySlugFunc       func(ctx context.Context, slug string) (*drawing.Drawing, error)
+	findByShareTokenFunc func(ctx context.Context, token string) (*drawing.Drawing, error)
+	updateFunc           func(ctx context.Context, d *drawing.Drawing) error
+	deleteFunc           func(ctx context.Context, id uuid.UUID) error
 }
 
 func (m *mockDrawingRepository) Create(ctx context.Context, d *drawing.Drawing) error {
@@ -58,6 +59,13 @@ func (m *mockDrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*dr
 func (m *mockDrawingRepository) FindBySlug(ctx context.Context, slug string) (*drawing.Drawing, error) {
 	if m.findBySlugFunc != nil {
 		return m.findBySlugFunc(ctx, slug)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockDrawingRepository) FindByShareToken(ctx context.Context, token string) (*drawing.Drawing, error) {
+	if m.findByShareTokenFunc != nil {
+		return m.findByShareTokenFunc(ctx, token)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -527,6 +535,60 @@ func TestGetDrawing(t *testing.T) {
 				}
 				if appState, ok := resp.Data["appState"].(map[string]interface{}); !ok || appState["zoom"] != 1.0 {
 					t.Error("expected appState with zoom")
+				}
+			},
+		},
+		{
+			name:      "get drawing with share token",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Drawing with Share Token", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					// Set a share token for this drawing
+					token := "test-share-token-abc123"
+					d.SetShareToken(&token)
+					return d, nil
+				},
+			},
+			expectedStatus: http.StatusOK,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp DrawingResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.ShareToken == nil {
+					t.Error("expected share_token to be present")
+				}
+				if resp.ShareToken != nil && *resp.ShareToken == "" {
+					t.Error("expected share_token to be non-empty")
+				}
+				if resp.ShareToken != nil && *resp.ShareToken != "test-share-token-abc123" {
+					t.Errorf("expected share_token to be 'test-share-token-abc123', got '%s'", *resp.ShareToken)
+				}
+			},
+		},
+		{
+			name:      "get drawing without share token",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Drawing without Share Token", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					// Don't generate share token
+					return d, nil
+				},
+			},
+			expectedStatus: http.StatusOK,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp DrawingResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.ShareToken != nil {
+					t.Errorf("expected share_token to be nil, got %v", *resp.ShareToken)
 				}
 			},
 		},

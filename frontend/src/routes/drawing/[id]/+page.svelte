@@ -5,6 +5,8 @@
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import { drawingsAPI } from '$lib/api';
 	import ExcalidrawWrapper from '$lib/components/ExcalidrawWrapper.svelte';
+	import ShareButton from '$lib/components/ShareButton.svelte';
+	import ShareDialog from '$lib/components/ShareDialog.svelte';
 	import type { DrawingState } from '$lib/stores/drawing';
 	import type { ID } from '$lib/types';
 
@@ -32,6 +34,12 @@
 	// UI state for name editing (Svelte store)
 	let isEditingName = $state(false);
 	let editingName = $state('');
+
+	// UI state for share dialog
+	let shareDialogOpen = $state(false);
+
+	// Track saving state from ExcalidrawWrapper
+	let isSaving = $state(false);
 
 	onMount(async () => {
 		if (!drawingId) {
@@ -83,6 +91,10 @@
 			cancelNameEdit();
 		}
 	}
+
+	function openShareDialog() {
+		shareDialogOpen = true;
+	}
 </script>
 
 <div class="h-screen w-screen flex flex-col bg-base-100">
@@ -129,16 +141,31 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<span class="text-sm text-base-content/70">
-				{drawingQuery.isFetching ? 'Loading...' : 'Ready'}
-			</span>
+			<!-- Share button -->
+			<ShareButton onclick={openShareDialog} />
+
+			{#if drawingQuery.isFetching}
+				<span class="loading loading-spinner loading-xs"></span>
+				<span class="text-xs text-base-content/70">Loading...</span>
+			{:else if isSaving}
+				<span class="loading loading-spinner loading-xs"></span>
+				<span class="text-xs text-base-content/70">Saving...</span>
+			{:else if drawingQuery.data}
+				<span class="text-xs text-base-content/70">Ready</span>
+			{/if}
 		</div>
 	</div>
 
 	<!-- Drawing canvas -->
 	<div class="flex-1 flex overflow-hidden">
 		{#if initialData && drawingId}
-			<ExcalidrawWrapper {drawingId} {initialData} />
+			<ExcalidrawWrapper
+				{drawingId}
+				{initialData}
+				onSavingChange={(saving) => {
+					isSaving = saving;
+				}}
+			/>
 		{:else}
 			<div class="flex items-center justify-center w-full h-full">
 				<span class="loading loading-spinner loading-lg"></span>
@@ -146,3 +173,6 @@
 		{/if}
 	</div>
 </div>
+
+<!-- Share Dialog -->
+<ShareDialog bind:open={shareDialogOpen} shareToken={drawingQuery.data?.share_token} {drawingId} />

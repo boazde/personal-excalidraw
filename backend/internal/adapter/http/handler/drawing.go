@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	drawingapp "github.com/personal-excalidraw/backend/internal/application/drawing"
 	"github.com/personal-excalidraw/backend/internal/adapter/http/util"
+	drawingapp "github.com/personal-excalidraw/backend/internal/application/drawing"
 )
 
 // DrawingHandler handles drawing HTTP requests
@@ -37,11 +37,12 @@ type UpdateDrawingRequest struct {
 
 // DrawingResponse represents the HTTP response for a drawing
 type DrawingResponse struct {
-	ID        string                 `json:"id"`
-	Name      string                 `json:"name"`
-	Data      map[string]interface{} `json:"data"`
-	CreatedAt string                 `json:"created_at"`
-	UpdatedAt string                 `json:"updated_at"`
+	ID         string                 `json:"id"`
+	Name       string                 `json:"name"`
+	Data       map[string]interface{} `json:"data"`
+	ShareToken *string                `json:"share_token"`
+	CreatedAt  string                 `json:"created_at"`
+	UpdatedAt  string                 `json:"updated_at"`
 }
 
 // DrawingListResponse represents a paginated list response
@@ -83,11 +84,12 @@ func (h *DrawingHandler) CreateDrawing(w http.ResponseWriter, r *http.Request) {
 
 	// Convert to HTTP response
 	response := DrawingResponse{
-		ID:        output.ID.String(),
-		Name:      output.Name,
-		Data:      output.Data,
-		CreatedAt: output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:         output.ID.String(),
+		Name:       output.Name,
+		Data:       output.Data,
+		ShareToken: output.ShareToken,
+		CreatedAt:  output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:  output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	util.RespondJSON(w, http.StatusCreated, response)
@@ -118,11 +120,12 @@ func (h *DrawingHandler) GetDrawing(w http.ResponseWriter, r *http.Request) {
 
 	// Convert to HTTP response
 	response := DrawingResponse{
-		ID:        output.ID.String(),
-		Name:      output.Name,
-		Data:      output.Data,
-		CreatedAt: output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:         output.ID.String(),
+		Name:       output.Name,
+		Data:       output.Data,
+		ShareToken: output.ShareToken,
+		CreatedAt:  output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:  output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	util.RespondJSON(w, http.StatusOK, response)
@@ -172,11 +175,12 @@ func (h *DrawingHandler) ListDrawings(w http.ResponseWriter, r *http.Request) {
 
 	for i, d := range output.Drawings {
 		response.Drawings[i] = &DrawingResponse{
-			ID:        d.ID.String(),
-			Name:      d.Name,
-			Data:      d.Data,
-			CreatedAt: d.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt: d.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			ID:         d.ID.String(),
+			Name:       d.Name,
+			Data:       d.Data,
+			ShareToken: d.ShareToken,
+			CreatedAt:  d.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:  d.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 	}
 
@@ -226,11 +230,12 @@ func (h *DrawingHandler) UpdateDrawing(w http.ResponseWriter, r *http.Request) {
 
 	// Convert to HTTP response
 	response := DrawingResponse{
-		ID:        output.ID.String(),
-		Name:      output.Name,
-		Data:      output.Data,
-		CreatedAt: output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:         output.ID.String(),
+		Name:       output.Name,
+		Data:       output.Data,
+		ShareToken: output.ShareToken,
+		CreatedAt:  output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:  output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	util.RespondJSON(w, http.StatusOK, response)
@@ -261,4 +266,104 @@ func (h *DrawingHandler) DeleteDrawing(w http.ResponseWriter, r *http.Request) {
 
 	// Return 204 No Content
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// ShareTokenResponse represents the HTTP response for share token generation
+type ShareTokenResponse struct {
+	DrawingID  string `json:"drawing_id"`
+	ShareToken string `json:"share_token"`
+}
+
+// GenerateShareToken handles POST /api/drawings/{id}/share
+func (h *DrawingHandler) GenerateShareToken(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("handling generate share token request")
+
+	// Extract ID from path
+	id := r.PathValue("id")
+	if id == "" {
+		h.logger.Error("missing drawing ID in path")
+		response := ErrorResponse{
+			Error:   "invalid_request",
+			Message: "missing drawing ID",
+		}
+		util.RespondJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Call service
+	output, err := h.service.GenerateShareToken(r.Context(), id)
+	if err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Convert to HTTP response
+	response := ShareTokenResponse{
+		DrawingID:  output.DrawingID,
+		ShareToken: output.ShareToken,
+	}
+
+	util.RespondJSON(w, http.StatusOK, response)
+}
+
+// RevokeShareToken handles DELETE /api/drawings/{id}/share
+func (h *DrawingHandler) RevokeShareToken(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("handling revoke share token request")
+
+	// Extract ID from path
+	id := r.PathValue("id")
+	if id == "" {
+		h.logger.Error("missing drawing ID in path")
+		response := ErrorResponse{
+			Error:   "invalid_request",
+			Message: "missing drawing ID",
+		}
+		util.RespondJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Call service
+	err := h.service.RevokeShareToken(r.Context(), id)
+	if err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Return 204 No Content
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetPublicDrawing handles GET /api/public/{token}
+func (h *DrawingHandler) GetPublicDrawing(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("handling get public drawing request")
+
+	// Extract token from path
+	token := r.PathValue("token")
+	if token == "" {
+		h.logger.Error("missing share token in path")
+		response := ErrorResponse{
+			Error:   "invalid_request",
+			Message: "missing share token",
+		}
+		util.RespondJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Call service
+	output, err := h.service.GetPublicDrawing(r.Context(), token)
+	if err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Convert to HTTP response
+	response := DrawingResponse{
+		ID:        output.ID.String(),
+		Name:      output.Name,
+		Data:      output.Data,
+		CreatedAt: output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+
+	util.RespondJSON(w, http.StatusOK, response)
 }

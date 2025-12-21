@@ -181,3 +181,87 @@ func (s *Service) DeleteDrawing(ctx context.Context, id string) error {
 
 	return nil
 }
+
+// GenerateShareToken generates a public share token for a drawing
+func (s *Service) GenerateShareToken(ctx context.Context, id string) (*ShareTokenOutput, error) {
+	s.logger.Info("generating share token", "id", id)
+
+	// Parse UUID from string
+	drawingID, err := uuid.Parse(id)
+	if err != nil {
+		s.logger.Error("invalid drawing ID format", "id", id, "error", err)
+		return nil, fmt.Errorf("invalid drawing ID: %w", err)
+	}
+
+	// Retrieve from repository
+	d, err := s.repo.FindByID(ctx, drawingID)
+	if err != nil {
+		s.logger.Error("failed to get drawing", "id", drawingID, "error", err)
+		return nil, err
+	}
+
+	// Generate new share token (UUID)
+	token := uuid.New().String()
+	d.SetShareToken(&token)
+
+	// Persist to repository
+	if err := s.repo.Update(ctx, d); err != nil {
+		s.logger.Error("failed to persist share token", "error", err)
+		return nil, fmt.Errorf("failed to save share token: %w", err)
+	}
+
+	s.logger.Info("share token generated successfully", "id", drawingID, "token", token)
+
+	return &ShareTokenOutput{
+		DrawingID:  d.ID().String(),
+		ShareToken: token,
+	}, nil
+}
+
+// RevokeShareToken revokes the public share token for a drawing
+func (s *Service) RevokeShareToken(ctx context.Context, id string) error {
+	s.logger.Info("revoking share token", "id", id)
+
+	// Parse UUID from string
+	drawingID, err := uuid.Parse(id)
+	if err != nil {
+		s.logger.Error("invalid drawing ID format", "id", id, "error", err)
+		return fmt.Errorf("invalid drawing ID: %w", err)
+	}
+
+	// Retrieve from repository
+	d, err := s.repo.FindByID(ctx, drawingID)
+	if err != nil {
+		s.logger.Error("failed to get drawing", "id", drawingID, "error", err)
+		return err
+	}
+
+	// Remove share token
+	d.SetShareToken(nil)
+
+	// Persist to repository
+	if err := s.repo.Update(ctx, d); err != nil {
+		s.logger.Error("failed to persist share token revocation", "error", err)
+		return fmt.Errorf("failed to revoke share token: %w", err)
+	}
+
+	s.logger.Info("share token revoked successfully", "id", drawingID)
+
+	return nil
+}
+
+// GetPublicDrawing retrieves a drawing by share token (no authentication required)
+func (s *Service) GetPublicDrawing(ctx context.Context, token string) (*DrawingOutput, error) {
+	s.logger.Info("getting public drawing", "token", token)
+
+	// Retrieve from repository by share token
+	d, err := s.repo.FindByShareToken(ctx, token)
+	if err != nil {
+		s.logger.Error("failed to get drawing by share token", "token", token, "error", err)
+		return nil, err
+	}
+
+	s.logger.Info("public drawing retrieved successfully", "id", d.ID())
+
+	return ToOutput(d), nil
+}

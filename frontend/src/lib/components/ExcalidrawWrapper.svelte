@@ -10,8 +10,21 @@
 	import type { ID } from '$lib/types'
 
 	// Accept props from parent
-	export let drawingId: ID
-	export let initialData: DrawingState
+	let {
+		drawingId,
+		initialData,
+		onSavingChange = () => {}
+	}: {
+		drawingId: ID;
+		initialData: DrawingState;
+		onSavingChange?: (isSaving: boolean) => void;
+	} = $props()
+
+	let isSaving = $state(false)
+
+	$effect(() => {
+		onSavingChange(isSaving)
+	})
 
 	let container: HTMLDivElement
 	let excalidrawApp: any
@@ -23,6 +36,8 @@
 		if (saveTimeout) {
 			clearTimeout(saveTimeout)
 		}
+
+		isSaving = true
 
 		saveTimeout = setTimeout(async () => {
 			try {
@@ -37,6 +52,8 @@
 				console.log('Drawing auto-saved to cloud:', drawingId)
 			} catch (error) {
 				console.error('Failed to save drawing to cloud:', error)
+			} finally {
+				isSaving = false
 			}
 			saveTimeout = null
 		}, AUTOSAVE_DELAY)
