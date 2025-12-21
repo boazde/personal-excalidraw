@@ -22,7 +22,7 @@ COPY . .
 # If LOW_MEMORY_BUILD=true: slower build (3-5 min) optimized for 1GB RAM servers
 # If LOW_MEMORY_BUILD=false: faster build (30-60 sec) requires 2GB+ RAM
 RUN if [ "$LOW_MEMORY_BUILD" = "true" ]; then \
-        export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size --gc-interval=100"; \
+        export NODE_OPTIONS="--max-old-space-size=512"; \
     fi && \
     pnpm run build
 
