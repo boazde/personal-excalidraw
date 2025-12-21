@@ -145,6 +145,19 @@ config() {
     fi
     echo ""
 
+    # Low Memory Build
+    print_info "Enable Low Memory Build Mode? (default: no)"
+    echo "Use this if your server has 1GB RAM or less"
+    echo "yes: slower build (3-5 min) but works on 1GB RAM"
+    echo "no:  faster build (30-60 sec) but needs 2GB+ RAM"
+    read -p "> " low_memory_build
+    if [ "$low_memory_build" = "yes" ] || [ "$low_memory_build" = "y" ] || [ "$low_memory_build" = "true" ]; then
+        low_memory_build="true"
+    else
+        low_memory_build="false"
+    fi
+    echo ""
+
     # Create the configuration file
     print_info "Creating configuration file..."
     cat > "$ENV_FILE" << EOF
@@ -175,6 +188,9 @@ LOG_LEVEL=$log_level
 # Authentication
 AUTH_ENABLED=$auth_enabled
 ACCESS_KEY=$access_key
+
+# Build Configuration
+LOW_MEMORY_BUILD=$low_memory_build
 EOF
 
     print_success "Configuration file created: $ENV_FILE"
@@ -188,6 +204,7 @@ EOF
     echo -e "  CORS:           ${BLUE}$cors_origins${NC}"
     echo -e "  Log Level:      ${BLUE}$log_level${NC}"
     echo -e "  Auth Enabled:   ${BLUE}$auth_enabled${NC}"
+    echo -e "  Low Memory:     ${BLUE}$low_memory_build${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 

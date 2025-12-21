@@ -1,6 +1,9 @@
 # Production Dockerfile for Frontend
 FROM node:20-alpine
 
+# Build argument for low memory mode (default: false)
+ARG LOW_MEMORY_BUILD=false
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -16,7 +19,12 @@ RUN pnpm install --frozen-lockfile --prod=false
 COPY . .
 
 # Build the application
-RUN pnpm run build
+# If LOW_MEMORY_BUILD=true: slower build (3-5 min) optimized for 1GB RAM servers
+# If LOW_MEMORY_BUILD=false: faster build (30-60 sec) requires 2GB+ RAM
+RUN if [ "$LOW_MEMORY_BUILD" = "true" ]; then \
+        export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size --gc-interval=100"; \
+    fi && \
+    pnpm run build
 
 # Install serve to run the static files
 RUN pnpm add serve

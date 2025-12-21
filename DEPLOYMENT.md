@@ -8,6 +8,8 @@ Simple guide to deploy Personal Excalidraw to your own server.
 - At least 1GB RAM and 10GB disk space
 - Docker installed (we'll show you how)
 
+**Note for Low-RAM VPS (1GB):** If your server has 1GB RAM or less, you can enable Low Memory Build Mode during configuration. This makes the build process slower (3-5 minutes instead of 30-60 seconds) but ensures it works reliably on low-RAM servers.
+
 ## Step 1: Install Docker
 
 If Docker is not installed on your server:
@@ -84,6 +86,10 @@ openssl rand -base64 32
 ```
 
 Copy the first one to `DB_PASSWORD` and the second to `ACCESS_KEY`.
+
+**Optional: For low-RAM servers (1GB or less):**
+
+Set `LOW_MEMORY_BUILD=true` if your server has limited RAM. This makes builds slower but prevents out-of-memory errors.
 
 Save the file (Ctrl+X, then Y, then Enter).
 
@@ -276,6 +282,50 @@ Common fixes:
 1. Make sure Docker is running: `docker ps`
 2. Check you have enough disk space: `df -h`
 3. Verify your `.env.production` file exists and has the required values
+
+### "JavaScript heap out of memory" during upgrade
+
+This happens on low-RAM VPS servers (1GB) when building the frontend. Solutions:
+
+**Solution 1: Enable Low Memory Build Mode (Recommended)**
+
+Edit your `.env.production` file:
+
+```bash
+nano .env.production
+```
+
+Change:
+```bash
+LOW_MEMORY_BUILD=true
+```
+
+Save and rebuild:
+```bash
+./deploy.sh upgrade
+```
+
+The build will take 3-5 minutes but will complete successfully.
+
+**Solution 2: Add Swap Space**
+
+If you prefer faster builds but still encounter OOM errors:
+
+```bash
+# Check current swap
+free -h
+
+# If swap is 0, create a 2GB swap file
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Make it permanent
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+Then retry the upgrade.
 
 ### Still having issues?
 

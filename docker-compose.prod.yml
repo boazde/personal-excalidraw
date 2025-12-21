@@ -3,6 +3,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        LOW_MEMORY_BUILD: ${LOW_MEMORY_BUILD:-false}
+      shm_size: '256mb'
     container_name: personal-excalidraw-frontend
     restart: unless-stopped
     networks:
