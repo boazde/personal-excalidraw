@@ -127,6 +127,16 @@
 			cancelEdit();
 		}
 	}
+
+	function copyShareURL(shareToken: string) {
+		const shareURL = `${window.location.origin}/share/${shareToken}`;
+		navigator.clipboard.writeText(shareURL);
+		toastStore.show({
+			type: 'success',
+			message: 'Share link copied to clipboard!',
+			duration: 3000
+		});
+	}
 </script>
 
 <div class="min-h-screen bg-base-100 p-8">
@@ -184,7 +194,7 @@
 			<!-- Data Table -->
 		{:else}
 			<div class="overflow-x-auto">
-				<table class="table table-zebra w-full">
+				<table class="table w-full">
 					<thead>
 						<tr>
 							<th>Name</th>
@@ -220,6 +230,29 @@
 									<td>{formatDate(drawing.updated_at)}</td>
 									<td class="text-right">
 										<div class="flex gap-2 justify-end">
+											{#if drawing.share_token}
+												<button
+													class="btn btn-ghost btn-success btn-sm"
+													title="Copy share link"
+													onclick={() => copyShareURL(drawing.share_token!)}
+													aria-label="Copy share link"
+												>
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														class="size-4"
+														fill="none"
+														viewBox="0 0 24 24"
+														stroke="currentColor"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+														/>
+													</svg>
+												</button>
+											{/if}
 											<a
 												href="/drawing/{drawing.id}"
 												class="btn btn-ghost btn-info btn-sm"

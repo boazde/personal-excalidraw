@@ -145,7 +145,7 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
   - [x] Handler layer tests (mock repository updated)
   - [x] All tests passing
 
-### Frontend Development (~85% Complete)
+### Frontend Development ✅
 
 - [x] Share button in drawing editor:
   - [x] UI component for "Share Public" button (ShareButton.svelte)
@@ -166,11 +166,11 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
   - [x] API endpoint for fetching public drawings (getByShareToken)
   - [x] PublicExcalidrawWrapper component for view-only mode
   - [x] Error handling for invalid/expired tokens
-- [ ] Drawing list page updates:
-  - [ ] Visual indicator for publicly shared drawings
-  - [ ] Quick copy share URL from list view
+- [x] Drawing list page updates:
+  - [x] Visual indicator for publicly shared drawings
+  - [x] Quick copy share URL from list view
 
-### User Experience
+### User Experience ✅
 
 - [x] Toast notifications:
   - [x] "Public link copied to clipboard"
@@ -181,7 +181,7 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
   - [x] Reload warning (changes will be lost)
   - [x] Link to project landing page
 - [x] URL structure:
-  - [x] Clean public URLs: `/public/[share_token]`
+  - [x] Clean public URLs: `/share/[share_token]`
   - [x] Short, shareable tokens (UUID-based)
 
 ### Goals
@@ -197,10 +197,10 @@ Enable sharing drawings with public URLs that allow view-only access with tempor
 
 ## Milestones
 
-| Phase                            | Target         | Status           |
-| -------------------------------- | -------------- | ---------------- |
-| Phase 1: Frontend Infrastructure | ✅ Complete    | Done             |
-| Phase 2: Local Storage           | ✅ Complete    | Done             |
-| Phase 3: Backend Integration     | ✅ Complete    | Done             |
-| Phase 4: Production Ready        | ✅ Complete    | Done             |
-| Phase 5: Public Share URL        | 🚧 In Progress | Backend Complete |
+| Phase                            | Target      | Status |
+| -------------------------------- | ----------- | ------ |
+| Phase 1: Frontend Infrastructure | ✅ Complete | Done   |
+| Phase 2: Local Storage           | ✅ Complete | Done   |
+| Phase 3: Backend Integration     | ✅ Complete | Done   |
+| Phase 4: Production Ready        | ✅ Complete | Done   |
+| Phase 5: Public Share URL        | ✅ Complete | Done   |
