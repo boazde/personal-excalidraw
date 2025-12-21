@@ -145,6 +145,19 @@ config() {
     fi
     echo ""
 
+    # Low Memory Build
+    print_info "Enable Low Memory Build Mode? (default: no)"
+    echo "Use this if your server has 1GB RAM or less"
+    echo "yes: slower build (3-5 min) but works on 1GB RAM"
+    echo "no:  faster build (30-60 sec) but needs 2GB+ RAM"
+    read -p "> " low_memory_build
+    if [ "$low_memory_build" = "yes" ] || [ "$low_memory_build" = "y" ] || [ "$low_memory_build" = "true" ]; then
+        low_memory_build="true"
+    else
+        low_memory_build="false"
+    fi
+    echo ""
+
     # Create the configuration file
     print_info "Creating configuration file..."
     cat > "$ENV_FILE" << EOF
@@ -175,6 +188,9 @@ LOG_LEVEL=$log_level
 # Authentication
 AUTH_ENABLED=$auth_enabled
 ACCESS_KEY=$access_key
+
+# Build Configuration
+LOW_MEMORY_BUILD=$low_memory_build
 EOF
 
     print_success "Configuration file created: $ENV_FILE"
@@ -188,6 +204,7 @@ EOF
     echo -e "  CORS:           ${BLUE}$cors_origins${NC}"
     echo -e "  Log Level:      ${BLUE}$log_level${NC}"
     echo -e "  Auth Enabled:   ${BLUE}$auth_enabled${NC}"
+    echo -e "  Low Memory:     ${BLUE}$low_memory_build${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 
@@ -226,7 +243,7 @@ stop() {
 }
 
 restart() {
-    print_info "Restarting Personal Excalidraw..."
+    local service="${1:-}"
     check_env_file
 
     # Export all variables from the env file so $DOCKER_COMPOSE can use them
@@ -234,11 +251,94 @@ restart() {
     source "$ENV_FILE"
     set +a
 
-    $DOCKER_COMPOSE -f "$COMPOSE_FILE" restart
+    if [ -n "$service" ]; then
+        # Validate service name
+        if ! validate_service "$service"; then
+            print_error "Invalid service name: $service"
+            print_info "Valid services: frontend, backend, nginx, postgres"
+            exit 1
+        fi
 
-    print_success "Application restarted successfully!"
+        print_info "Restarting service: $service"
+        $DOCKER_COMPOSE -f "$COMPOSE_FILE" restart "$service"
+        print_success "Service $service restarted successfully!"
+    else
+        print_info "Restarting all services..."
+        $DOCKER_COMPOSE -f "$COMPOSE_FILE" restart
+        print_success "All services restarted successfully!"
+    fi
 
+    echo ""
     $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
+}
+
+build() {
+    local service="${1:-}"
+    local rebuild="${2:-}"
+    check_env_file
+
+    # Export all variables from the env file so $DOCKER_COMPOSE can use them
+    set -a
+    source "$ENV_FILE"
+    set +a
+
+    if [ -n "$service" ]; then
+        # Validate service name (only frontend and backend can be built)
+        if [ "$service" != "frontend" ] && [ "$service" != "backend" ]; then
+            print_error "Invalid service name: $service"
+            print_info "Only 'frontend' and 'backend' can be built (nginx and postgres use pre-built images)"
+            exit 1
+        fi
+
+        if [ "$rebuild" = "--no-cache" ]; then
+            print_info "Rebuilding service from scratch (no cache): $service"
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" build --no-cache "$service"
+        else
+            print_info "Building service: $service"
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" build "$service"
+        fi
+        print_success "Service $service built successfully!"
+
+        # Ask if user wants to restart the service
+        read -p "Do you want to restart the service now? (yes/no): " restart_now
+        if [ "$restart_now" = "yes" ] || [ "$restart_now" = "y" ]; then
+            print_info "Restarting $service..."
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d "$service"
+            print_success "Service $service restarted with new build!"
+        fi
+    else
+        if [ "$rebuild" = "--no-cache" ]; then
+            print_info "Rebuilding all services from scratch (no cache)..."
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" build --no-cache
+        else
+            print_info "Building all services..."
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" build
+        fi
+        print_success "All services built successfully!"
+
+        # Ask if user wants to restart
+        read -p "Do you want to restart all services now? (yes/no): " restart_now
+        if [ "$restart_now" = "yes" ] || [ "$restart_now" = "y" ]; then
+            print_info "Restarting all services..."
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d
+            print_success "All services restarted with new builds!"
+        fi
+    fi
+
+    echo ""
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
+}
+
+validate_service() {
+    local service="$1"
+    case "$service" in
+        frontend|backend|nginx|postgres)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 status() {
@@ -285,7 +385,7 @@ upgrade() {
 
     # Pull latest changes
     print_info "Pulling latest changes from git..."
-    git pull origin master || git pull origin main || {
+    git pull origin main || {
         print_warning "Git pull failed or not in a git repository"
         print_info "Continuing with local files..."
     }
@@ -414,7 +514,12 @@ ${YELLOW}Commands:${NC}
   ${BLUE}config${NC}             Interactive configuration setup (recommended for first-time setup)
   ${BLUE}start${NC}              Start the application
   ${BLUE}stop${NC}               Stop the application
-  ${BLUE}restart${NC}            Restart the application
+  ${BLUE}restart${NC} [service]  Restart all services or a specific service
+                       - Services: frontend, backend, nginx, postgres
+  ${BLUE}build${NC} [service] [--no-cache]
+                       Build all services or a specific service
+                       - Services: frontend, backend (nginx/postgres use pre-built images)
+                       - Add --no-cache to rebuild from scratch
   ${BLUE}status${NC}             Show service status and health
   ${BLUE}logs${NC} [service]     Show logs (last 100 lines)
                        - Add service name: frontend, backend, nginx, postgres
@@ -427,6 +532,11 @@ ${YELLOW}Commands:${NC}
 ${YELLOW}Examples:${NC}
   $0 config                 # Interactive setup (first time)
   $0 start                  # Start all services
+  $0 restart                # Restart all services
+  $0 restart backend        # Restart only backend service
+  $0 build                  # Build all services
+  $0 build frontend         # Build only frontend service
+  $0 build backend --no-cache # Rebuild backend from scratch (no cache)
   $0 logs backend -f        # Follow backend logs
   $0 logs postgres          # Show last 100 lines of postgres logs
   $0 upgrade                # Upgrade to latest version
@@ -458,7 +568,10 @@ case "${1:-}" in
         stop
         ;;
     restart)
-        restart
+        restart "${2:-}"
+        ;;
+    build)
+        build "${2:-}" "${3:-}"
         ;;
     status)
         status
