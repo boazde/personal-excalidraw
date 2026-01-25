@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import { drawingsAPI } from '$lib/api';
+	import { drawingsAPI, type DrawingDTO } from '$lib/api';
 	import type { ID } from '$lib/types';
 	import { toastStore } from '$lib/stores/toast';
+
+	// Sorting types
+	type SortField = 'name' | 'created_at' | 'updated_at';
+	type SortDirection = 'asc' | 'desc';
 
 	const queryClient = useQueryClient();
 
@@ -75,6 +79,10 @@
 	let editingId = $state<ID | null>(null);
 	let editingValue = $state('');
 
+	// Sorting state
+	let sortField = $state<SortField>('updated_at');
+	let sortDirection = $state<SortDirection>('desc');
+
 	function formatDate(dateString: string): string {
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -137,9 +145,63 @@
 			duration: 3000
 		});
 	}
+
+	function toggleSort(field: SortField) {
+		if (sortField === field) {
+			// Toggle direction if same field
+			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			// New field: default to descending for dates, ascending for name
+			sortField = field;
+			sortDirection = field === 'name' ? 'asc' : 'desc';
+		}
+	}
+
+	function getSortedDrawings(drawings: DrawingDTO[]) {
+		return [...drawings].sort((a, b) => {
+			let comparison = 0;
+
+			if (sortField === 'name') {
+				comparison = a.name.localeCompare(b.name);
+			} else {
+				// For created_at and updated_at
+				comparison = new Date(a[sortField]).getTime() - new Date(b[sortField]).getTime();
+			}
+
+			return sortDirection === 'asc' ? comparison : -comparison;
+		});
+	}
 </script>
 
-<div class="min-h-screen bg-base-100 p-8">
+{#snippet SortableHeader(field: SortField, label: string)}
+	<button
+		class="flex items-center gap-1 hover:text-primary cursor-pointer"
+		onclick={() => toggleSort(field)}
+	>
+		{label}
+		{#if sortField === field}
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+			>
+				{#if sortDirection === 'asc'}
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+				{:else}
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+				{/if}
+			</svg>
+		{:else}
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+			</svg>
+		{/if}
+	</button>
+{/snippet}
+
+<div class="h-screen overflow-y-auto bg-base-100 p-8">
 	<div class="max-w-6xl mx-auto">
 		<div class="mb-8">
 			<img src="/logo-text.svg" alt="Personal Excalidraw" class="h-6 w-auto" />
@@ -197,15 +259,15 @@
 				<table class="table w-full">
 					<thead>
 						<tr>
-							<th>Name</th>
-							<th>Created At</th>
-							<th>Updated At</th>
+							<th>{@render SortableHeader('name', 'Name')}</th>
+							<th>{@render SortableHeader('created_at', 'Created At')}</th>
+							<th>{@render SortableHeader('updated_at', 'Updated At')}</th>
 							<th class="text-right">Actions</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#if drawingsQuery.data}
-							{#each drawingsQuery.data.drawings as drawing}
+							{#each getSortedDrawings(drawingsQuery.data.drawings) as drawing}
 								<tr>
 									<td class="font-medium">
 										{#if editingId === drawing.id}
