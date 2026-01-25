@@ -15,7 +15,8 @@ Quick command reference for managing your Personal Excalidraw deployment.
 | `config` | Interactive configuration setup (first time) |
 | `start` | Start the application |
 | `stop` | Stop the application |
-| `restart` | Restart the application |
+| `restart [service]` | Restart all services or a specific service (frontend, backend, nginx, postgres) |
+| `build [service] [--no-cache]` | Build all services or a specific service (frontend, backend) with optional cache bypass |
 | `status` | Show service status and health |
 
 ### Logs & Monitoring
@@ -102,6 +103,12 @@ nano .env.production  # Edit DB_PASSWORD and ACCESS_KEY
 
 # Restart if needed
 ./deploy.sh restart
+
+# Restart specific service only
+./deploy.sh restart backend
+
+# Rebuild a specific service
+./deploy.sh build frontend --no-cache
 ```
 
 ## Docker Compose (Alternative)

@@ -106,16 +106,20 @@ That's it! Your application is now running at `http://your-server-ip:8080`
 ## Common Commands
 
 ```bash
-./deploy.sh config     # Interactive setup (first time)
-./deploy.sh start      # Start the application
-./deploy.sh stop       # Stop the application
-./deploy.sh restart    # Restart the application
-./deploy.sh status     # Check if it's running
-./deploy.sh logs       # See what's happening
-./deploy.sh logs -f    # Watch logs in real-time
-./deploy.sh upgrade    # Update to latest version
-./deploy.sh backup     # Backup your drawings
-./deploy.sh help       # Show all commands
+./deploy.sh config                # Interactive setup (first time)
+./deploy.sh start                 # Start the application
+./deploy.sh stop                  # Stop the application
+./deploy.sh restart               # Restart all services
+./deploy.sh restart backend       # Restart only backend service
+./deploy.sh build frontend        # Rebuild only frontend service
+./deploy.sh build --no-cache      # Rebuild all services without cache
+./deploy.sh status                # Check if it's running
+./deploy.sh logs                  # See what's happening
+./deploy.sh logs -f               # Watch logs in real-time
+./deploy.sh logs backend -f       # Watch backend logs only
+./deploy.sh upgrade               # Update to latest version
+./deploy.sh backup                # Backup your drawings
+./deploy.sh help                  # Show all commands
 ```
 
 ## Daily Usage
@@ -282,6 +286,29 @@ Common fixes:
 1. Make sure Docker is running: `docker ps`
 2. Check you have enough disk space: `df -h`
 3. Verify your `.env.production` file exists and has the required values
+
+### Specific service troubleshooting
+
+If only one service is having issues, you can restart or rebuild it individually:
+
+```bash
+# Check which service is failing
+./deploy.sh status
+
+# Restart just the failing service
+./deploy.sh restart backend
+./deploy.sh restart frontend
+./deploy.sh restart postgres
+
+# Rebuild a specific service
+./deploy.sh build backend
+./deploy.sh build frontend --no-cache
+
+# View logs for specific service
+./deploy.sh logs backend -f
+```
+
+Available services: `frontend`, `backend`, `nginx`, `postgres`
 
 ### "JavaScript heap out of memory" during upgrade
 

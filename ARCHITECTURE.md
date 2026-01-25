@@ -11,13 +11,16 @@ personal-excalidraw/
 │   │   ├── routes/
 │   │   │   ├── +layout.svelte           # Root layout
 │   │   │   ├── +page.svelte             # Home page (drawings list)
-│   │   │   └── drawing/[id]/
-│   │   │       └── +page.svelte         # Drawing editor page
+│   │   │   ├── drawing/[id]/
+│   │   │   │   └── +page.svelte         # Drawing editor page
+│   │   │   └── share/[token]/
+│   │   │       └── +page.svelte         # Public share view page
 │   │   ├── lib/
 │   │   │   ├── api/
 │   │   │   │   └── drawings.ts          # API client with TypeScript types
 │   │   │   ├── components/
 │   │   │   │   ├── ExcalidrawWrapper.svelte  # Excalidraw integration
+│   │   │   │   ├── PublicExcalidrawWrapper.svelte  # View-only Excalidraw for public shares
 │   │   │   │   └── AuthModal.svelte     # Authentication modal
 │   │   │   ├── stores/
 │   │   │   │   ├── drawing.ts           # Drawing state
@@ -123,12 +126,14 @@ CREATE TABLE drawings (
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) UNIQUE NOT NULL,
   data JSONB NOT NULL,  -- Stores elements, appState, and files
+  share_token VARCHAR(255) UNIQUE,  -- UUID for public sharing (null = private)
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes for performance
 CREATE INDEX idx_drawings_slug ON drawings(slug);
+CREATE INDEX idx_drawings_share_token ON drawings(share_token);
 CREATE INDEX idx_drawings_created_at ON drawings(created_at DESC);
 CREATE INDEX idx_drawings_updated_at ON drawings(updated_at DESC);
 ```
@@ -137,6 +142,7 @@ CREATE INDEX idx_drawings_updated_at ON drawings(updated_at DESC);
 - Auto-incrementing integer IDs
 - Slug-based URLs for SEO (e.g., `/drawing/my-architecture-diagram`)
 - JSONB storage for flexible Excalidraw data
+- Share token support for public sharing (UUID-based, null = private)
 - Automatic timestamp management
 - Optimized indexes for common queries
 
@@ -177,6 +183,13 @@ GET    /api/drawings/:id      # Get specific drawing
 POST   /api/drawings          # Create new drawing
 PUT    /api/drawings/:id      # Update drawing (supports partial updates)
 DELETE /api/drawings/:id      # Delete drawing
+
+# Public Sharing (protected by auth middleware)
+POST   /api/drawings/:id/share   # Generate/regenerate public share token
+DELETE /api/drawings/:id/share   # Revoke public sharing (set share_token to null)
+
+# Public Access (no authentication required)
+GET    /api/public/:share_token  # Get drawing by share token (view-only)
 ```
 
 **Authentication:**
@@ -259,6 +272,16 @@ A Svelte component that wraps the React-based Excalidraw library:
 - CRUD operations (Create, Read, Update, Delete)
 - Responsive design
 - Navigation to editor
+- Visual indicator for publicly shared drawings
+- Quick copy share URL from list view
+
+### Public Share Page
+- View-only access via share token (no authentication required)
+- Full Excalidraw functionality enabled for temporary edits
+- All changes are session-only and not persisted
+- Clear "View Only" mode banner
+- Error handling for invalid/expired tokens
+- Isolated view with no navigation to other pages
 
 ## Build & Deployment
 

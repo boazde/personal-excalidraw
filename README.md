@@ -19,6 +19,7 @@ Personal Excalidraw gives you a self-hosted alternative to cloud-based drawing t
 - Auto-save with 1-second debounce
 - Full CRUD operations (Create, Read, Update, Delete) for drawings
 - Inline name editing with keyboard shortcuts (Enter to save, Escape to cancel)
+- Public share URLs for easy collaboration - share drawings with view-only access
 - API-backed data storage with Go backend
 - TanStack Query for efficient data fetching and caching
 - Modern UI with SvelteKit and Tailwind CSS
