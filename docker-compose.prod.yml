@@ -110,4 +110,5 @@ volumes:
 
 networks:
   personal-excalidraw:
-    driver: bridge
+    external: true
+    name: dokploy-network
